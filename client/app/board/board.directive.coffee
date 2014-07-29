@@ -34,6 +34,7 @@ angular.module('syncboardApp').directive 'board', ($timeout) ->
         newPath.add(event.point)
 
       tool.onMouseUp = (event)->
+        $scope.$emit 'draw',newFigure
         $scope.figures.push newFigure
         draw($scope.figures)
 
