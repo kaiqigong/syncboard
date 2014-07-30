@@ -1,7 +1,7 @@
 'use strict'
 
 angular.module('syncboardApp').directive 'board', ($timeout) ->
-  scope: {figures:'='}
+  scope: {figures:'=',tool:'@',paperStyle:'='}
   restrict: 'A'
   link: ($scope, $element, $attrs) ->
     initialBoard = ()->
@@ -12,31 +12,76 @@ angular.module('syncboardApp').directive 'board', ($timeout) ->
 
       tool = new $scope.paper.Tool()
 
-      newFigure = null
       newPath = null
       tool.onMouseDown = (event)->
-        console.log event
-        newFigure = {}
-        newFigure.type = 'path'
-        newFigure.strokeColor = 'black'
-        newFigure.strokeWidth = 1
-        newFigure.points = []
-        newFigure.points.push({x:event.point.x,y:event.point.y})
-
-        newPath = new $scope.paper.Path()
-        newPath.strokeColor = 'black'
-        newPath.strokeWidth = 1
-        newPath.add(event.point)
+        switch $scope.tool
+          when 'pen'
+            newPath = new $scope.paper.Path()
+            newPath.strokeColor = $scope.paperStyle.strokeColor or 'black'
+            newPath.strokeWidth = $scope.paperStyle.strokeWidth or 1
+            newPath.add(event.point)
+          when 'eraser'
+            newPath = new $scope.paper.Path()
+            newPath.strokeColor = 'white'
+            newPath.strokeWidth = 50
+            newPath.add(event.point)
+          when 'line'
+            newPath = new $scope.paper.Path()
+            newPath.strokeColor = $scope.paperStyle.strokeColor or 'black'
+            newPath.strokeWidth = $scope.paperStyle.strokeWidth or 1
+            newPath.add(event.point)
+            newPath.add(event.point)
+          when 'circle'
+            newPath = new $scope.paper.Path.Circle(event.point, 20)
+            newPath.strokeColor = $scope.paperStyle.strokeColor or 'black'
+            newPath.strokeWidth = $scope.paperStyle.strokeWidth or 1
+          when 'rectangle'
+            newPath = new $scope.paper.Path.Rectangle(event.point, event.point)
+            newPath.strokeColor = $scope.paperStyle.strokeColor or 'black'
+            newPath.strokeWidth = $scope.paperStyle.strokeWidth or 1
+          when 'text'
+            console.log 'text'
 
       tool.onMouseDrag = (event)->
-        newFigure.points.push({x:event.point.x,y:event.point.y})
+        switch $scope.tool
+          when 'pen'
+            newPath.add(event.point)
+          when 'eraser'
+            newPath.add(event.point)
+          when 'line'
+            newPath.remove()
+            newPath = new $scope.paper.Path()
+            newPath.strokeColor = $scope.paperStyle.strokeColor or 'black'
+            newPath.strokeWidth = $scope.paperStyle.strokeWidth or 1
+            newPath.add(event.downPoint)
+            newPath.add(event.point)
+          when 'circle'
+            newPath.remove()
+            if $scope.paper.Key.isDown('shift')
+              rectangle = new $scope.paper.Rectangle(event.downPoint,new $scope.paper.Size(event.point.x - event.downPoint.x,event.point.y - event.downPoint.y))
+              newPath = new $scope.paper.Path.Circle(new $scope.paper.Point((event.point.x + event.downPoint.x) / 2, (event.point.y + event.downPoint.y) / 2),event.point.getDistance(event.downPoint) / 2)
+            else
+              rectangle = new $scope.paper.Rectangle(event.downPoint,new $scope.paper.Size(event.point.x - event.downPoint.x,event.point.y - event.downPoint.y))
+              newPath = new $scope.paper.Path.Ellipse(rectangle)
+            newPath.strokeColor = $scope.paperStyle.strokeColor or 'black'
+            newPath.strokeWidth = $scope.paperStyle.strokeWidth or 1
+          when 'rectangle'
+            newPath.remove()
+            newPath = new $scope.paper.Path.Rectangle(event.downPoint,event.point)
+            newPath.strokeColor = $scope.paperStyle.strokeColor or 'black'
+            newPath.strokeWidth = $scope.paperStyle.strokeWidth or 1
+          when 'text'
+            console.log 'text'
 
-        newPath.add(event.point)
 
       tool.onMouseUp = (event)->
-        $scope.$emit 'draw',newFigure
-        $scope.figures.push newFigure
-        draw($scope.figures)
+        switch $scope.tool
+          when 'pen'
+            newPath.smooth()
+            newPath.simplify()
+          when 'line'
+            console.log newPath
+        $scope.$emit 'draw',newPath.exportJSON()
 
       # Draw the view now:
       $scope.paper.view.draw()
@@ -47,14 +92,8 @@ angular.module('syncboardApp').directive 'board', ($timeout) ->
       initialBoard()
       for figure in figures
         do (figure)->
-          switch figure.type
-            when 'path'
-              path = new $scope.paper.Path()
-              path.strokeColor = figure.strokeColor or 'black'
-              path.strokeWidth = figure.strokeWidth or 1
-              for point in figure.points
-                path.add(new $scope.paper.Point(point.x, point.y))
-              console.log path
+            path = new $scope.paper.Path()
+            path.importJSON(figure.data)
       $scope.paper.view.draw()
 
     $scope.$watch 'figures', (newValue)->

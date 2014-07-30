@@ -1,3 +1,18 @@
 <div ng-include="'components/navbar/navbar.html'"></div>
 
-<canvas board figures="figures"></canvas>
+<button ng-click="undo()">undo</button>
+<button ng-click="reset()">reset</button>
+
+<div class="btn-group">
+  <label class="btn btn-primary" ng-model="tool" btn-radio="'pen'"><i class="fa fa-pencil"></i></label>
+  <label class="btn btn-primary" ng-model="tool" btn-radio="'eraser'"><i class="fa fa-eraser"></i></label>
+  <label class="btn btn-primary" ng-model="tool" btn-radio="'line'"><i class="fa fa-minus"></i></label>
+  <label class="btn btn-primary" ng-model="tool" btn-radio="'circle'"><i class="fa fa-circle-o"></i></label>
+  <label class="btn btn-primary" ng-model="tool" btn-radio="'rectangle'"><i class="fa fa-square-o"></i></label>
+</div>
+
+stroke:<input colorpicker="hex" type="text" ng-model="style.strokeColor" />
+fill:<input colorpicker="hex" type="text" ng-model="style.fillColor" />
+strokeWidth:<input type="range" style="display: inline-block;width: 100px;" min="1" default="1" ng-model="style.strokeWidth"/>{{style.strokeWidth}}
+<label ng-show="tool == 'circle'">press shift to draw perfect circle</label>
+<canvas class="white-board" board figures="figures" tool="{{tool}}" paper-style="style"></canvas>

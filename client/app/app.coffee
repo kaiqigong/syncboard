@@ -6,7 +6,8 @@ angular.module('syncboardApp', [
   'ngSanitize',
   'ui.bootstrap',
   'btford.socket-io',
-  'ui.router'
+  'ui.router',
+  'colorpicker.module'
 ])
   .config (($stateProvider, $urlRouterProvider, $locationProvider) ->
     $urlRouterProvider
